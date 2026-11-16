@@ -35,6 +35,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var progress: ProgressBar
     private var stream: Stream? = null
     private lateinit var desktopButton: ImageButton
+    private lateinit var starButton: ImageButton
     private lateinit var mobileUa: String
     private var mobileMetadata: UserAgentMetadata? = null
     private val prefs by lazy { getSharedPreferences("settings", MODE_PRIVATE) }
@@ -49,6 +50,16 @@ class MainActivity : AppCompatActivity() {
         playButton = findViewById(R.id.play)
         progress = findViewById(R.id.progress)
         desktopButton = findViewById(R.id.desktop)
+        starButton = findViewById(R.id.star)
+        findViewById<View>(R.id.home).setOnClickListener { showHome() }
+        starButton.setOnClickListener {
+            val origin = Sites.originOf(web.url) ?: return@setOnClickListener
+            val list = sites()
+            val added = origin !in list
+            saveSites(if (added) list + origin else list - origin)
+            updateStar()
+            Toast.makeText(this, if (added) "Added to home" else "Removed from home", Toast.LENGTH_SHORT).show()
+        }
 
         CookieManager.getInstance().setAcceptThirdPartyCookies(web, true)
         web.settings.apply {
@@ -83,14 +94,22 @@ class MainActivity : AppCompatActivity() {
 
             // Links that try to open another app (intent://, reddit://) are ignored,
             // and so are redirects to ad servers (the pop-up ads of streaming sites).
-            override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest) =
-                (request.url.scheme != "http" && request.url.scheme != "https") ||
-                    (!request.hasGesture() && AdBlock.isBlocked(request.url.host))
+            override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean {
+                val url = request.url
+                // The ✕ next to a site on the home page.
+                if (url.scheme == "hyperstream" && url.host == "remove" && view.url == HOME_URL) {
+                    saveSites(sites() - url.getQueryParameter("u").orEmpty())
+                    view.evaluateJavascript("document.getElementById('s${url.getQueryParameter("i")?.toIntOrNull()}')?.remove()", null)
+                    return true
+                }
+                return (url.scheme != "http" && url.scheme != "https") || (!request.hasGesture() && AdBlock.isBlocked(url.host))
+            }
 
             // Fires for normal navigation and for in-page navigation on sites like Reddit and X.
             override fun doUpdateVisitedHistory(view: WebView, url: String, isReload: Boolean) {
                 urlBar.setText(if (url.startsWith("http")) url else "")
                 offer(null)
+                updateStar()
             }
         }
         web.webChromeClient = object : WebChromeClient() {
@@ -162,7 +181,23 @@ class MainActivity : AppCompatActivity() {
         }
         val link = text?.let { Regex("""https?://\S+""").find(it)?.value }
         if (link != null) web.loadUrl(link)
-        else if (web.url == null) web.loadDataWithBaseURL(null, HOME, "text/html", "utf-8", null)
+        else if (web.url == null) showHome()
+    }
+
+    private fun sites(): List<String> =
+        prefs.getString("sites", null)?.split('\n')?.filter { it.isNotEmpty() } ?: Sites.DEFAULT
+
+    private fun saveSites(list: List<String>) = prefs.edit().putString("sites", list.joinToString("\n")).apply()
+
+    private fun showHome() = web.loadDataWithBaseURL(HOME_URL, Sites.homeHtml(sites()), "text/html", "utf-8", HOME_URL)
+
+    /** Filled star when the current site is on the home page; hidden on the home page itself. */
+    private fun updateStar() {
+        val origin = Sites.originOf(web.url)
+        starButton.visibility = if (origin == null) View.INVISIBLE else View.VISIBLE
+        val saved = origin in sites()
+        starButton.setImageResource(if (saved) R.drawable.ic_star_filled else R.drawable.ic_star)
+        starButton.contentDescription = if (saved) "Remove from home" else "Add to home"
     }
 
     /**
@@ -199,19 +234,6 @@ class MainActivity : AppCompatActivity() {
     }
 
     private companion object {
-        const val HOME = """
-            <html><head><meta name="viewport" content="width=device-width, initial-scale=1">
-            <style>
-              body { margin: 0; padding: 48px 24px; background: #121419; color: #f2f3f5; font: 16px/1.5 sans-serif; text-align: center; }
-              h1 { margin: 0 0 8px; font-size: 28px; color: #ffc43d; }
-              p { margin: 0 0 32px; color: #9aa1ad; }
-              a { display: block; margin: 0 auto 12px; max-width: 320px; padding: 16px; border-radius: 12px;
-                  background: #1b1e25; border: 1px solid #343946; color: #f2f3f5; text-decoration: none; font-weight: 600; }
-            </style></head><body>
-            <h1>HyperStream</h1>
-            <p>Open a site and start a video. When a stream is found, a Play button appears at the bottom.</p>
-            <a href="https://www.reddit.com">Reddit</a>
-            <a href="https://x.com">X</a>
-            </body></html>"""
+        const val HOME_URL = "hyperstream://home/"
     }
 }

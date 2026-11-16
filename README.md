@@ -12,6 +12,12 @@ Download `HyperStream.apk` from the latest [release](../../releases) and open it
 2. Start the video. A **Play in best quality** button appears at the bottom.
 3. In the player: tap for controls, double-tap a side to skip 10 s, tap the quality label to change quality.
 
+## Home page and app lock
+- The home button opens your list of sites. Tap the star next to the address bar to add the site you're on
+  (tap again to remove it), or the ✕ next to a site on the home page.
+- Every time you come back to the app it asks for your fingerprint or your phone's PIN/pattern.
+  Phones without a screen lock are not locked. The app's contents are hidden in the recent-apps screen (Android 13+).
+
 ## Desktop site
 On by default: sites are told this is Chrome on Windows, so they serve their desktop version, which
 on many sites (Reddit included) still lays out to fit the phone. The monitor button next to the address
