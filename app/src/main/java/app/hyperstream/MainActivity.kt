@@ -25,6 +25,7 @@ import android.widget.ProgressBar
 import java.io.ByteArrayInputStream
 import kotlin.concurrent.thread
 import androidx.activity.OnBackPressedCallback
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 
 /** A small browser that watches each page's requests for a video stream and offers to play it. */
@@ -39,6 +40,14 @@ class MainActivity : AppCompatActivity() {
     private lateinit var mobileUa: String
     private var mobileMetadata: UserAgentMetadata? = null
     private val prefs by lazy { getSharedPreferences("settings", MODE_PRIVATE) }
+
+    // When HyperStream's player cannot play a video, it closes and the page plays it instead.
+    private val player = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+        if (result.resultCode != RESULT_FIRST_USER) return@registerForActivityResult
+        val why = result.data?.getStringExtra("error")
+        Toast.makeText(this, "HyperStream couldn't play this one ($why), so it plays on the page", Toast.LENGTH_LONG).show()
+        web.evaluateJavascript("document.querySelector('video')?.play()", null)
+    }
 
     @SuppressLint("SetJavaScriptEnabled")
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -148,7 +157,7 @@ class MainActivity : AppCompatActivity() {
         playButton.setOnClickListener {
             val s = stream ?: return@setOnClickListener
             web.evaluateJavascript("document.querySelectorAll('video').forEach(v => v.pause())", null)
-            startActivity(
+            player.launch(
                 Intent(this, PlayerActivity::class.java)
                     .putExtra("url", s.url)
                     .putExtra("kind", s.kind)
@@ -156,6 +165,22 @@ class MainActivity : AppCompatActivity() {
                     .putExtra("cookie", CookieManager.getInstance().getCookie(s.url))
                     .putExtra("ua", web.settings.userAgentString)
             )
+        }
+
+        // Long-press a picture (photo, GIF, WebP...) to see it full screen at its best quality.
+        web.setOnLongClickListener {
+            val hit = web.hitTestResult
+            val image = hit.extra
+            if ((hit.type != WebView.HitTestResult.IMAGE_TYPE && hit.type != WebView.HitTestResult.SRC_IMAGE_ANCHOR_TYPE) ||
+                image == null || !image.startsWith("http")
+            ) return@setOnLongClickListener false
+            startActivity(
+                Intent(this, ImageActivity::class.java)
+                    .putExtra("url", image)
+                    .putExtra("referer", web.url)
+                    .putExtra("ua", web.settings.userAgentString)
+            )
+            true
         }
 
         onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {

@@ -29,6 +29,12 @@ automatic redirects to them, and pages cannot open pop-up windows (links you tap
 [StevenBlack hosts list](https://github.com/StevenBlack/hosts) (MIT), refreshed on every build.
 Ads a site serves from its own servers, such as Reddit's promoted posts and X's promoted posts, are not blocked.
 
+## Pictures and fallback
+- Long-press any picture (photo, GIF, WebP and other formats) to see it full screen; pinch to zoom.
+  On Reddit and X it opens the original, full-size version (falling back to the one shown).
+- If HyperStream's player can't play a video, it closes and the video plays on the page as normal.
+- The Play button follows the site: when the page switches to another video, the button plays that one.
+
 ## Limits
 - It cannot make a video sharper than the best version the site has.
 - DRM services (Netflix etc.) and YouTube are not supported.

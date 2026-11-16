@@ -1,7 +1,9 @@
 package app.hyperstream
 
-/** A playable stream found in a page's network requests. */
-data class Stream(val url: String, val kind: String)
+/** A playable stream found in a page's network requests, and when it was seen (ms). */
+data class Stream(val url: String, val kind: String) {
+    var at = 0L
+}
 
 /** Decides which of a page's requests is the video's master stream. */
 object Detector {
@@ -10,7 +12,9 @@ object Detector {
 
     // Only addresses the page itself requested are offered: sites like Reddit sign them, so an
     // address worked out by hand is refused (HTTP 403).
-    fun detect(url: String): Stream? {
+    fun detect(url: String, now: Long = System.currentTimeMillis()): Stream? = find(url)?.also { it.at = now }
+
+    private fun find(url: String): Stream? {
         if (!url.startsWith("http")) return null
         val path = url.substringBefore('?').substringBefore('#').lowercase()
         if (path.endsWith(".m3u8")) return if (VARIANT.containsMatchIn(url)) null else Stream(url, "hls")
@@ -25,6 +29,9 @@ object Detector {
         // Once a page has a streamed video (HLS/DASH), a plain MP4 is its own media file or, more
         // often, a video ad: keep offering the stream.
         if (found.kind == "mp4" && current.kind != "mp4") return current
+        // A master playlist is followed within moments by the playlists of its qualities:
+        // keep the master, which lists every quality. Later manifests are a new video.
+        if (current.kind != "mp4" && found.at - current.at < 2000) return current
         return found
     }
 }

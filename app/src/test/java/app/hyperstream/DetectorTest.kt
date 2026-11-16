@@ -33,7 +33,7 @@ class DetectorTest {
     @Test fun choosesBetweenDetections() {
         val hls = Stream(redditHls, "hls")
         assertEquals(hls, Detector.choose(null, hls))
-        val other = Stream("https://v.redd.it/zzz999/HLSPlaylist.m3u8?a=2", "hls")
+        val other = Stream("https://v.redd.it/zzz999/HLSPlaylist.m3u8?a=2", "hls").apply { at = 60_000 }
         assertEquals(other, Detector.choose(hls, other))                          // a different video replaces it
         val packaged = Stream("https://packaged-media.redd.it/abc123/pb/m2-res_720p.mp4?s=sig", "mp4")
         assertEquals(hls, Detector.choose(packaged, hls))                         // a full stream beats a single file
@@ -42,6 +42,11 @@ class DetectorTest {
         assertEquals(x, Detector.choose(x, init))                                 // a stream's own media file is ignored
         val ad = Stream("https://cdn.ads-example.com/creative.mp4", "mp4")
         assertEquals(x, Detector.choose(x, ad))                                   // nor is a video ad elsewhere
+        val master = Stream("https://cdn.c.com/v1/master.m3u8", "hls").apply { at = 10_000 }
+        val quality = Stream("https://cdn.c.com/v1/720p.m3u8", "hls").apply { at = 10_400 }
+        val next = Stream("https://cdn.c.com/v2/master.m3u8", "hls").apply { at = 25_000 }
+        assertEquals(master, Detector.choose(master, quality))                    // its quality playlist follows at once
+        assertEquals(next, Detector.choose(master, next))                         // the site switched to another video
         val first = Stream("https://cdn.b.com/one.mp4", "mp4")
         val second = Stream("https://cdn.b.com/two.mp4", "mp4")
         assertEquals(second, Detector.choose(first, second))                      // plain videos: the newest wins

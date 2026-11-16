@@ -41,5 +41,11 @@
             android:exported="false"
             android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|keyboardHidden"
             android:theme="@style/Theme.HyperStream.Player" />
+
+        <activity
+            android:name=".ImageActivity"
+            android:exported="false"
+            android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|keyboardHidden"
+            android:theme="@style/Theme.HyperStream.Player" />
     </application>
 </manifest>

@@ -10,7 +10,6 @@ import android.view.MotionEvent
 import android.view.View
 import android.view.WindowManager
 import android.widget.TextView
-import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.WindowCompat
@@ -115,7 +114,9 @@ class PlayerActivity : AppCompatActivity() {
                 // For refused requests, say which server answered what, so the cause can be tracked down.
                 val http = error.cause as? HttpDataSource.InvalidResponseCodeException
                 val detail = if (http != null) "HTTP ${http.responseCode} from ${http.dataSpec.uri.host}" else error.errorCodeName
-                Toast.makeText(this@PlayerActivity, "Could not play this video ($detail)", Toast.LENGTH_LONG).show()
+                // Go back to the page, which plays the video its own way.
+                setResult(RESULT_FIRST_USER, android.content.Intent().putExtra("error", detail))
+                finish()
             }
         })
         playerView.player = player
