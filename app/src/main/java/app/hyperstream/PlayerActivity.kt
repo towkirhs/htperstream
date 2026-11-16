@@ -25,6 +25,7 @@ import androidx.media3.common.TrackSelectionOverride
 import androidx.media3.common.VideoSize
 import androidx.media3.database.StandaloneDatabaseProvider
 import androidx.media3.datasource.DefaultHttpDataSource
+import androidx.media3.datasource.HttpDataSource
 import androidx.media3.datasource.cache.CacheDataSource
 import androidx.media3.datasource.cache.LeastRecentlyUsedCacheEvictor
 import androidx.media3.datasource.cache.SimpleCache
@@ -111,7 +112,10 @@ class PlayerActivity : AppCompatActivity() {
             }
 
             override fun onPlayerError(error: PlaybackException) {
-                Toast.makeText(this@PlayerActivity, "Could not play this video (${error.errorCodeName})", Toast.LENGTH_LONG).show()
+                // For refused requests, say which server answered what, so the cause can be tracked down.
+                val http = error.cause as? HttpDataSource.InvalidResponseCodeException
+                val detail = if (http != null) "HTTP ${http.responseCode} from ${http.dataSpec.uri.host}" else error.errorCodeName
+                Toast.makeText(this@PlayerActivity, "Could not play this video ($detail)", Toast.LENGTH_LONG).show()
             }
         })
         playerView.player = player
