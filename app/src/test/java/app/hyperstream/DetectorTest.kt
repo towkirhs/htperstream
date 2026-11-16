@@ -7,7 +7,6 @@ import org.junit.Test
 class DetectorTest {
     private val xMaster = "https://video.twimg.com/ext_tw_video/1/pu/pl/abc.m3u8?tag=12&v=1"
     private val redditHls = "https://v.redd.it/abc123/HLSPlaylist.m3u8?a=1&f=sd"
-    private val redditDash = Stream("https://v.redd.it/abc123/DASHPlaylist.mpd", "dash", derived = true)
 
     @Test fun findsMasterPlaylists() {
         assertEquals(Stream(xMaster, "hls"), Detector.detect(xMaster))
@@ -24,17 +23,20 @@ class DetectorTest {
         assertNull(Detector.detect("blob:https://a.com/1234"))
     }
 
-    @Test fun redditFilesLeadToTheManifest() {
-        assertEquals(redditDash, Detector.detect("https://v.redd.it/abc123/DASH_480.mp4"))
-        assertEquals(redditDash, Detector.detect("https://v.redd.it/abc123/HLS_720.ts"))
+    @Test fun redditFilesAreOfferedAsRequested() {
+        // Signed addresses must be used exactly as the page requested them.
+        val packaged = "https://packaged-media.redd.it/abc123/pb/m2-res_720p.mp4?m=DASHPlaylist.mpd&v=1&e=1&s=sig"
+        assertEquals(Stream(packaged, "mp4"), Detector.detect(packaged))
+        assertNull(Detector.detect("https://v.redd.it/abc123/HLS_720.ts"))
     }
 
     @Test fun choosesBetweenDetections() {
         val hls = Stream(redditHls, "hls")
         assertEquals(hls, Detector.choose(null, hls))
-        assertEquals(hls, Detector.choose(hls, redditDash))                       // same video: keep the page's own manifest
-        val other = Stream("https://v.redd.it/zzz999/DASHPlaylist.mpd", "dash", derived = true)
+        val other = Stream("https://v.redd.it/zzz999/HLSPlaylist.m3u8?a=2", "hls")
         assertEquals(other, Detector.choose(hls, other))                          // a different video replaces it
+        val packaged = Stream("https://packaged-media.redd.it/abc123/pb/m2-res_720p.mp4?s=sig", "mp4")
+        assertEquals(hls, Detector.choose(packaged, hls))                         // a full stream beats a single file
         val x = Stream(xMaster, "hls")
         val init = Stream("https://video.twimg.com/ext_tw_video/1/pu/vid/avc1/0/0/720x1280/i.mp4", "mp4")
         assertEquals(x, Detector.choose(x, init))                                 // a stream's own media file is ignored
