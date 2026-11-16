@@ -106,6 +106,10 @@ class MainActivity : AppCompatActivity() {
             override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean {
                 val url = request.url
                 // The ✕ next to a site on the home page.
+                if (url.scheme == "hyperstream" && url.host == "update" && view.url == HOME_URL) {
+                    Updater.check(this@MainActivity)
+                    return true
+                }
                 if (url.scheme == "hyperstream" && url.host == "remove" && view.url == HOME_URL) {
                     saveSites(sites() - url.getQueryParameter("u").orEmpty())
                     view.evaluateJavascript("document.getElementById('s${url.getQueryParameter("i")?.toIntOrNull()}')?.remove()", null)
@@ -214,7 +218,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun saveSites(list: List<String>) = prefs.edit().putString("sites", list.joinToString("\n")).apply()
 
-    private fun showHome() = web.loadDataWithBaseURL(HOME_URL, Sites.homeHtml(sites()), "text/html", "utf-8", HOME_URL)
+    private fun showHome() = web.loadDataWithBaseURL(HOME_URL, Sites.homeHtml(sites(), Updater.version(this)), "text/html", "utf-8", HOME_URL)
 
     /** Filled star when the current site is on the home page; hidden on the home page itself. */
     private fun updateStar() {

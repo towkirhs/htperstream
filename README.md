@@ -29,6 +29,10 @@ automatic redirects to them, and pages cannot open pop-up windows (links you tap
 [StevenBlack hosts list](https://github.com/StevenBlack/hosts) (MIT), refreshed on every build.
 Ads a site serves from its own servers, such as Reddit's promoted posts and X's promoted posts, are not blocked.
 
+## Updates
+"Check for updates" at the bottom of the home page downloads the newest release and opens Android's
+installer. The first time, Android asks you to allow HyperStream to install apps.
+
 ## Pictures and fallback
 - Long-press any picture (photo, GIF, WebP and other formats) to see it full screen; pinch to zoom.
   On Reddit and X it opens the original, full-size version (falling back to the one shown).

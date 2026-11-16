@@ -16,7 +16,7 @@ object Sites {
     /** Name shown on the home page: "https://www.reddit.com" -> "reddit.com". */
     fun label(origin: String) = origin.substringAfter("://").removePrefix("www.").removePrefix("m.")
 
-    fun homeHtml(sites: List<String>): String {
+    fun homeHtml(sites: List<String>, version: String): String {
         val rows = sites.mapIndexed { i, s ->
             val u = java.net.URLEncoder.encode(s, "UTF-8")
             """<div class="row" id="s$i"><a class="site" href="$s">${label(s)}</a><a class="x" href="hyperstream://remove?i=$i&amp;u=$u" aria-label="Remove">✕</a></div>"""
@@ -30,12 +30,15 @@ object Sites {
               .row { display: flex; align-items: center; max-width: 400px; margin: 0 auto 10px; border-radius: 12px;
                      background: #1b1e25; border: 1px solid #343946; }
               .site { flex: 1; padding: 16px; color: #f2f3f5; text-decoration: none; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+              .update { display: block; width: fit-content; margin: 28px auto 0; padding: 12px 20px; border-radius: 12px;
+                        border: 1px solid #343946; color: #ffc43d; text-decoration: none; font-weight: 600; font-size: 14px; }
               .x { width: 48px; height: 48px; line-height: 48px; text-align: center; color: #9aa1ad; text-decoration: none; flex: none; }
             </style></head><body>
             <h1>HyperStream</h1>
             <p>Open a site and start a video; a Play button appears when a stream is found.
             Tap ☆ next to the address bar to add the site you're on.</p>
             $rows
+            <a class="update" href="hyperstream://update">Check for updates · v$version</a>
             </body></html>"""
     }
 }
