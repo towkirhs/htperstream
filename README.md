@@ -12,6 +12,11 @@ Download `HyperStream.apk` from the latest [release](../../releases) and open it
 2. Start the video. A **Play in best quality** button appears at the bottom.
 3. In the player: tap for controls, double-tap a side to skip 10 s, tap the quality label to change quality.
 
+## Desktop site
+On by default: sites are told this is Chrome on Windows, so they serve their desktop version, which
+on many sites (Reddit included) still lays out to fit the phone. The monitor button next to the address
+bar turns it off and on (dimmed = off).
+
 ## Ad blocker
 Built into the browser: requests to about 76,000 known ad and tracker servers are blocked, and so are
 automatic redirects to them (the pop-up ads of many streaming sites). The list is the

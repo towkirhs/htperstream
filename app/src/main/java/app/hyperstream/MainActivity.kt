@@ -14,6 +14,11 @@ import android.webkit.WebResourceResponse
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import android.widget.Button
+import android.widget.ImageButton
+import android.widget.Toast
+import androidx.webkit.UserAgentMetadata
+import androidx.webkit.WebSettingsCompat
+import androidx.webkit.WebViewFeature
 import android.widget.EditText
 import android.widget.ProgressBar
 import java.io.ByteArrayInputStream
@@ -28,6 +33,10 @@ class MainActivity : AppCompatActivity() {
     private lateinit var playButton: Button
     private lateinit var progress: ProgressBar
     private var stream: Stream? = null
+    private lateinit var desktopButton: ImageButton
+    private lateinit var mobileUa: String
+    private var mobileMetadata: UserAgentMetadata? = null
+    private val prefs by lazy { getSharedPreferences("settings", MODE_PRIVATE) }
 
     @SuppressLint("SetJavaScriptEnabled")
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -38,13 +47,25 @@ class MainActivity : AppCompatActivity() {
         urlBar = findViewById(R.id.url)
         playButton = findViewById(R.id.play)
         progress = findViewById(R.id.progress)
+        desktopButton = findViewById(R.id.desktop)
 
         CookieManager.getInstance().setAcceptThirdPartyCookies(web, true)
         web.settings.apply {
             javaScriptEnabled = true
             domStorageEnabled = true
-            // Without the WebView marker, sites serve the same pages they give Chrome.
-            userAgentString = userAgentString.replace("; wv", "")
+        }
+        // Without the WebView marker, sites serve the same pages they give Chrome.
+        mobileUa = web.settings.userAgentString.replace("; wv", "")
+        if (WebViewFeature.isFeatureSupported(WebViewFeature.USER_AGENT_METADATA)) {
+            mobileMetadata = WebSettingsCompat.getUserAgentMetadata(web.settings)
+        }
+        applyDesktopMode()
+        desktopButton.setOnClickListener {
+            prefs.edit().putBoolean("desktop", !prefs.getBoolean("desktop", true)).apply()
+            applyDesktopMode()
+            val on = prefs.getBoolean("desktop", true)
+            Toast.makeText(this, if (on) "Desktop site on" else "Desktop site off", Toast.LENGTH_SHORT).show()
+            web.reload()
         }
         web.webViewClient = object : WebViewClient() {
             // Called on a background thread for every request the page makes.
@@ -128,6 +149,29 @@ class MainActivity : AppCompatActivity() {
         val link = text?.let { Regex("""https?://\S+""").find(it)?.value }
         if (link != null) web.loadUrl(link)
         else if (web.url == null) web.loadDataWithBaseURL(null, HOME, "text/html", "utf-8", null)
+    }
+
+    /**
+     * "Desktop site" (on by default): sites are told this is Chrome on Windows, so they serve their
+     * desktop version, while the page still lays out to the phone's width wherever the site allows.
+     */
+    private fun applyDesktopMode() {
+        val on = prefs.getBoolean("desktop", true)
+        val chrome = Regex("Chrome/[\\d.]+").find(mobileUa)?.value ?: "Chrome/131.0.0.0"
+        web.settings.userAgentString = if (on) {
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) $chrome Safari/537.36"
+        } else mobileUa
+        // Newer sites also read the browser's "client hints", which must say the same thing.
+        mobileMetadata?.let { mobile ->
+            WebSettingsCompat.setUserAgentMetadata(
+                web.settings,
+                if (on) UserAgentMetadata.Builder(mobile).setMobile(false).setPlatform("Windows")
+                    .setPlatformVersion("15.0.0").setModel("").build()
+                else mobile,
+            )
+        }
+        desktopButton.alpha = if (on) 1f else 0.45f
+        desktopButton.contentDescription = if (on) "Desktop site on" else "Desktop site off"
     }
 
     private fun offer(s: Stream?) {
