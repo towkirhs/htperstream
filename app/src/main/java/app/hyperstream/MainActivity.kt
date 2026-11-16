@@ -16,6 +16,8 @@ import android.webkit.WebViewClient
 import android.widget.Button
 import android.widget.EditText
 import android.widget.ProgressBar
+import java.io.ByteArrayInputStream
+import kotlin.concurrent.thread
 import androidx.activity.OnBackPressedCallback
 import androidx.appcompat.app.AppCompatActivity
 
@@ -31,6 +33,7 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
+        thread { assets.open("hosts.txt").use(AdBlock::load) }
         web = findViewById(R.id.web)
         urlBar = findViewById(R.id.url)
         playButton = findViewById(R.id.play)
@@ -46,13 +49,19 @@ class MainActivity : AppCompatActivity() {
         web.webViewClient = object : WebViewClient() {
             // Called on a background thread for every request the page makes.
             override fun shouldInterceptRequest(view: WebView, request: WebResourceRequest): WebResourceResponse? {
+                // Ad and tracker requests get an empty answer instead of reaching the server.
+                if (!request.isForMainFrame && AdBlock.isBlocked(request.url.host)) {
+                    return WebResourceResponse("text/plain", "utf-8", ByteArrayInputStream(ByteArray(0)))
+                }
                 Detector.detect(request.url.toString())?.let { found -> runOnUiThread { offer(Detector.choose(stream, found)) } }
                 return null
             }
 
-            // Links that try to open another app (intent://, reddit://) are ignored.
+            // Links that try to open another app (intent://, reddit://) are ignored,
+            // and so are redirects to ad servers (the pop-up ads of streaming sites).
             override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest) =
-                request.url.scheme != "http" && request.url.scheme != "https"
+                (request.url.scheme != "http" && request.url.scheme != "https") ||
+                    (!request.hasGesture() && AdBlock.isBlocked(request.url.host))
 
             // Fires for normal navigation and for in-page navigation on sites like Reddit and X.
             override fun doUpdateVisitedHistory(view: WebView, url: String, isReload: Boolean) {
