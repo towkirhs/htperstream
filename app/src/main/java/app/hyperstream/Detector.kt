@@ -28,8 +28,9 @@ object Detector {
         if (current == null) return found
         // A manifest the page itself requested beats one we worked out for the same video.
         if (found.derived && redditId(current.url) == redditId(found.url)) return current
-        // Media files of a stream we already have (e.g. its init segment) are not a new video.
-        if (found.kind == "mp4" && current.kind != "mp4" && host(current.url) == host(found.url)) return current
+        // Once a page has a streamed video (HLS/DASH), a plain MP4 is its own media file or, more
+        // often, a video ad: keep offering the stream.
+        if (found.kind == "mp4" && current.kind != "mp4") return current
         return found
     }
 }

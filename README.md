@@ -19,7 +19,7 @@ bar turns it off and on (dimmed = off).
 
 ## Ad blocker
 Built into the browser: requests to about 76,000 known ad and tracker servers are blocked, and so are
-automatic redirects to them (the pop-up ads of many streaming sites). The list is the
+automatic redirects to them, and pages cannot open pop-up windows (links you tap that would open a new tab open in place instead). The list is the
 [StevenBlack hosts list](https://github.com/StevenBlack/hosts) (MIT), refreshed on every build.
 Ads a site serves from its own servers, such as Reddit's promoted posts and X's promoted posts, are not blocked.
 

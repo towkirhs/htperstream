@@ -4,6 +4,7 @@ import android.annotation.SuppressLint
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
+import android.os.Message
 import android.view.View
 import android.view.inputmethod.EditorInfo
 import android.view.inputmethod.InputMethodManager
@@ -53,6 +54,8 @@ class MainActivity : AppCompatActivity() {
         web.settings.apply {
             javaScriptEnabled = true
             domStorageEnabled = true
+            // Pages must ask before opening a new window, which lets onCreateWindow below refuse pop-ups.
+            setSupportMultipleWindows(true)
         }
         // Without the WebView marker, sites serve the same pages they give Chrome.
         mobileUa = web.settings.userAgentString.replace("; wv", "")
@@ -91,6 +94,17 @@ class MainActivity : AppCompatActivity() {
             }
         }
         web.webChromeClient = object : WebChromeClient() {
+            // Pop-up blocker. A new window is only allowed for a link the user tapped (it opens here,
+            // in the same view); windows opened by scripts are what tap-to-play pop-up ads use.
+            override fun onCreateWindow(view: WebView, isDialog: Boolean, isUserGesture: Boolean, resultMsg: Message?): Boolean {
+                val hit = view.hitTestResult
+                val link = hit.extra
+                if (isUserGesture && hit.type == WebView.HitTestResult.SRC_ANCHOR_TYPE && link != null &&
+                    !AdBlock.isBlocked(Uri.parse(link).host)
+                ) view.loadUrl(link)
+                return false
+            }
+
             override fun onProgressChanged(view: WebView, percent: Int) {
                 progress.progress = percent
                 progress.visibility = if (percent < 100) View.VISIBLE else View.INVISIBLE

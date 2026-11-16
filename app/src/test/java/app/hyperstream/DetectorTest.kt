@@ -38,7 +38,10 @@ class DetectorTest {
         val x = Stream(xMaster, "hls")
         val init = Stream("https://video.twimg.com/ext_tw_video/1/pu/vid/avc1/0/0/720x1280/i.mp4", "mp4")
         assertEquals(x, Detector.choose(x, init))                                 // a stream's own media file is ignored
-        val elsewhere = Stream("https://cdn.b.com/clip.mp4", "mp4")
-        assertEquals(elsewhere, Detector.choose(x, elsewhere))
+        val ad = Stream("https://cdn.ads-example.com/creative.mp4", "mp4")
+        assertEquals(x, Detector.choose(x, ad))                                   // nor is a video ad elsewhere
+        val first = Stream("https://cdn.b.com/one.mp4", "mp4")
+        val second = Stream("https://cdn.b.com/two.mp4", "mp4")
+        assertEquals(second, Detector.choose(first, second))                      // plain videos: the newest wins
     }
 }
