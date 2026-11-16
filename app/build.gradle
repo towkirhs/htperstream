@@ -1,0 +1,50 @@
+plugins {
+    id 'com.android.application'
+    id 'org.jetbrains.kotlin.android'
+}
+
+android {
+    namespace 'app.hyperstream'
+    compileSdk 35
+
+    defaultConfig {
+        applicationId 'app.hyperstream'
+        minSdk 26
+        targetSdk 34
+        versionCode((System.getenv('GITHUB_RUN_NUMBER') ?: '1').toInteger())
+        versionName "0.1.${System.getenv('GITHUB_RUN_NUMBER') ?: '0'}"
+    }
+
+    // The key is committed so every build installs over the previous one.
+    signingConfigs {
+        release {
+            storeFile file('hyperstream.jks')
+            storePassword 'hyperstream'
+            keyAlias 'hyperstream'
+            keyPassword 'hyperstream'
+        }
+    }
+    buildTypes {
+        release {
+            minifyEnabled false
+            signingConfig signingConfigs.release
+        }
+    }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+    kotlinOptions { jvmTarget = '17' }
+    lint { checkReleaseBuilds false }
+}
+
+dependencies {
+    def media3 = '1.5.1'
+    implementation "androidx.media3:media3-exoplayer:$media3"
+    implementation "androidx.media3:media3-exoplayer-hls:$media3"
+    implementation "androidx.media3:media3-exoplayer-dash:$media3"
+    implementation "androidx.media3:media3-ui:$media3"
+    implementation 'androidx.appcompat:appcompat:1.7.0'
+    implementation 'com.google.android.material:material:1.12.0'
+    testImplementation 'junit:junit:4.13.2'
+}
