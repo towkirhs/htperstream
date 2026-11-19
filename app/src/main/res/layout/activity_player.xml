@@ -24,18 +24,43 @@
         android:textSize="13sp"
         android:visibility="gone" />
 
-    <TextView
-        android:id="@+id/quality"
+    <LinearLayout
         android:layout_width="wrap_content"
-        android:layout_height="36dp"
-        android:minWidth="64dp"
+        android:layout_height="wrap_content"
         android:layout_gravity="top|end"
         android:layout_margin="12dp"
-        android:paddingHorizontal="12dp"
-        android:gravity="center"
-        android:background="@drawable/pill"
-        android:textColor="@color/accent"
-        android:textSize="14sp"
-        android:textStyle="bold"
-        android:text="Quality" />
+        android:orientation="horizontal">
+
+        <ImageButton
+            android:id="@+id/save"
+            android:layout_width="48dp"
+            android:layout_height="36dp"
+            android:layout_marginStart="8dp"
+            android:background="@drawable/pill"
+            android:src="@drawable/ic_bookmark"
+            android:contentDescription="Save to folder" />
+
+        <ImageButton
+            android:id="@+id/download"
+            android:layout_width="48dp"
+            android:layout_height="36dp"
+            android:layout_marginStart="8dp"
+            android:background="@drawable/pill"
+            android:src="@drawable/ic_download"
+            android:contentDescription="Download video" />
+
+        <TextView
+            android:id="@+id/quality"
+            android:layout_width="wrap_content"
+            android:layout_height="36dp"
+            android:minWidth="64dp"
+            android:layout_marginStart="8dp"
+            android:paddingHorizontal="12dp"
+            android:gravity="center"
+            android:background="@drawable/pill"
+            android:textColor="@color/accent"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            android:text="Quality" />
+    </LinearLayout>
 </FrameLayout>

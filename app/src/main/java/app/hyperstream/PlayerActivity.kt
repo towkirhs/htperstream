@@ -9,7 +9,9 @@ import android.view.GestureDetector
 import android.view.MotionEvent
 import android.view.View
 import android.view.WindowManager
+import android.widget.ImageButton
 import android.widget.TextView
+import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.WindowCompat
@@ -64,6 +66,7 @@ class PlayerActivity : AppCompatActivity() {
 
     @Volatile private var downloader: Downloader? = null
     @Volatile private var closed = false
+    private var saver: Saver? = null
 
     @SuppressLint("ClickableViewAccessibility")
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -141,8 +144,36 @@ class PlayerActivity : AppCompatActivity() {
         playerView.setOnTouchListener { _, event -> gestures.onTouchEvent(event) }
         quality.setOnClickListener { chooseQuality() }
 
+        val title = intent.getStringExtra("title").orEmpty()
+        val page = intent.getStringExtra("referer")
+        findViewById<ImageButton>(R.id.save).apply {
+            visibility = if (page?.startsWith("http") == true) View.VISIBLE else View.GONE
+            setOnClickListener { Bookmarks.pick(this@PlayerActivity, title, page!!) }
+        }
+        findViewById<ImageButton>(R.id.download).setOnClickListener { download(item, title, cached) }
+
         preload(item, kind, cached)
     }
+
+    /** Saves the whole video, at its highest quality, as an MP4 in Downloads/HyperStream. */
+    private fun download(item: MediaItem, title: String, cached: CacheDataSource.Factory) {
+        when {
+            !Saver.supported -> return toast("Downloading needs Android 10 or newer")
+            player.isCurrentMediaItemLive -> return toast("Live streams can't be downloaded")
+            saver != null -> return toast("Already downloading: ${loaded.text}")
+        }
+        toast("Downloading in the best quality. Keep the player open until it finishes.")
+        saver = Saver(this, DefaultMediaSourceFactory(cached),
+            onProgress = { percent -> loaded.visibility = View.VISIBLE; loaded.text = "Downloading $percent%" },
+            onDone = { name ->
+                saver = null
+                loaded.text = if (name != null) "Saved" else "Download failed"
+                toast(if (name != null) "Saved to Downloads/HyperStream/$name" else "The download failed. This site may not allow it.")
+            },
+        ).also { it.start(item, title.ifBlank { "HyperStream video" }) }
+    }
+
+    private fun toast(text: String) = Toast.makeText(this, text, Toast.LENGTH_LONG).show()
 
     /** Lists the video qualities of the stream; picking one pins it, "Best available" unpins. */
     private fun chooseQuality() {
@@ -200,7 +231,7 @@ class PlayerActivity : AppCompatActivity() {
                 d.download { _, _, percent ->
                     runOnUiThread {
                         loaded.visibility = View.VISIBLE
-                        loaded.text = if (percent >= 100f) "Fully loaded" else "${percent.toInt()}% loaded"
+                        if (saver == null) loaded.text = if (percent >= 100f) "Fully loaded" else "${percent.toInt()}% loaded"
                     }
                 }
             } catch (e: Exception) {
@@ -215,6 +246,7 @@ class PlayerActivity : AppCompatActivity() {
     }
 
     override fun onDestroy() {
+        saver?.cancel()
         closed = true
         downloader?.cancel()
         executor.shutdownNow()

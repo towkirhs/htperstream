@@ -48,6 +48,14 @@
             android:contentDescription="Add to home" />
 
         <ImageButton
+            android:id="@+id/save"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:src="@drawable/ic_bookmark"
+            android:contentDescription="Save to folder" />
+
+        <ImageButton
             android:id="@+id/desktop"
             android:layout_width="48dp"
             android:layout_height="48dp"

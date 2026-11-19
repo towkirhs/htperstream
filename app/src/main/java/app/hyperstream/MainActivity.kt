@@ -37,6 +37,7 @@ class MainActivity : AppCompatActivity() {
     private var stream: Stream? = null
     private lateinit var desktopButton: ImageButton
     private lateinit var starButton: ImageButton
+    private lateinit var saveButton: ImageButton
     private lateinit var mobileUa: String
     private var mobileMetadata: UserAgentMetadata? = null
     private val prefs by lazy { getSharedPreferences("settings", MODE_PRIVATE) }
@@ -60,6 +61,11 @@ class MainActivity : AppCompatActivity() {
         progress = findViewById(R.id.progress)
         desktopButton = findViewById(R.id.desktop)
         starButton = findViewById(R.id.star)
+        saveButton = findViewById(R.id.save)
+        saveButton.setOnClickListener {
+            val url = web.url?.takeIf { it.startsWith("http") } ?: return@setOnClickListener
+            Bookmarks.pick(this, web.title.orEmpty(), url)
+        }
         findViewById<View>(R.id.home).setOnClickListener { showHome() }
         starButton.setOnClickListener {
             val origin = Sites.originOf(web.url) ?: return@setOnClickListener
@@ -106,6 +112,13 @@ class MainActivity : AppCompatActivity() {
             override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean {
                 val url = request.url
                 // The ✕ next to a site on the home page.
+                if (url.scheme == "hyperstream" && url.host == "unsave" && view.url == HOME_URL) {
+                    val i = url.getQueryParameter("i")?.toIntOrNull() ?: return true
+                    val list = Bookmarks.all(this@MainActivity)
+                    if (i in list.indices) Bookmarks.save(this@MainActivity, list.filterIndexed { j, _ -> j != i })
+                    showHome()
+                    return true
+                }
                 if (url.scheme == "hyperstream" && url.host == "update" && view.url == HOME_URL) {
                     Updater.check(this@MainActivity)
                     return true
@@ -168,6 +181,7 @@ class MainActivity : AppCompatActivity() {
                     .putExtra("referer", web.url)
                     .putExtra("cookie", CookieManager.getInstance().getCookie(s.url))
                     .putExtra("ua", web.settings.userAgentString)
+                    .putExtra("title", web.title)
             )
         }
 
@@ -183,6 +197,7 @@ class MainActivity : AppCompatActivity() {
                     .putExtra("url", image)
                     .putExtra("referer", web.url)
                     .putExtra("ua", web.settings.userAgentString)
+                    .putExtra("title", web.title)
             )
             true
         }
@@ -218,12 +233,13 @@ class MainActivity : AppCompatActivity() {
 
     private fun saveSites(list: List<String>) = prefs.edit().putString("sites", list.joinToString("\n")).apply()
 
-    private fun showHome() = web.loadDataWithBaseURL(HOME_URL, Sites.homeHtml(sites(), Updater.version(this)), "text/html", "utf-8", HOME_URL)
+    private fun showHome() = web.loadDataWithBaseURL(HOME_URL, Sites.homeHtml(sites(), Bookmarks.all(this), Updater.version(this)), "text/html", "utf-8", HOME_URL)
 
     /** Filled star when the current site is on the home page; hidden on the home page itself. */
     private fun updateStar() {
         val origin = Sites.originOf(web.url)
         starButton.visibility = if (origin == null) View.INVISIBLE else View.VISIBLE
+        saveButton.visibility = starButton.visibility
         val saved = origin in sites()
         starButton.setImageResource(if (saved) R.drawable.ic_star_filled else R.drawable.ic_star)
         starButton.contentDescription = if (saved) "Remove from home" else "Add to home"

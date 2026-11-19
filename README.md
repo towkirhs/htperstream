@@ -29,6 +29,12 @@ automatic redirects to them, and pages cannot open pop-up windows (links you tap
 [StevenBlack hosts list](https://github.com/StevenBlack/hosts) (MIT), refreshed on every build.
 Ads a site serves from its own servers, such as Reddit's promoted posts and X's promoted posts, are not blocked.
 
+## Saved videos and downloads
+- 🔖 next to the address bar (or at the top of the player) saves the page you're on into a folder: pick one or
+  make a new one. Saved videos are listed by folder at the bottom of the home page; tap to open, ✕ to remove.
+- ⬇ at the top of the player saves the whole video, at the highest quality the site offers, as an MP4 in
+  Downloads/HyperStream (Android 10+). Keep the player open until it says Saved. Live streams can't be saved.
+
 ## Updates
 "Check for updates" at the bottom of the home page downloads the newest release and opens Android's
 installer. The first time, Android asks you to allow HyperStream to install apps.
